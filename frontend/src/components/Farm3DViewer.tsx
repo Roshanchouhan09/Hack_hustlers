@@ -77,6 +77,7 @@ export const Farm3DViewer: React.FC<Farm3DViewerProps> = ({
   const [isPlaying, setIsPlaying] = useState(true);
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>('orbit');
   const [spectralMode, setSpectralMode] = useState<SpectralMode>('rgb');
+  const [lightingPreset, setLightingPreset] = useState<'noon' | 'golden' | 'night'>('noon');
   const [selectedZone, setSelectedZone] = useState<ZoneInfo | null>(null);
 
   // Telemetry real-time indicators
@@ -803,6 +804,34 @@ export const Farm3DViewer: React.FC<Farm3DViewerProps> = ({
             }`}
           >
             Thermal Stress
+          </button>
+        </div>
+
+        {/* Time of Day Lighting Modes */}
+        <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-700/70 p-1 rounded-xl backdrop-blur-md shadow-lg pointer-events-auto">
+          <button
+            onClick={() => setLightingPreset('noon')}
+            className={`px-2 py-1 rounded-lg text-xs font-semibold transition ${
+              lightingPreset === 'noon' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            ☀️ Noon
+          </button>
+          <button
+            onClick={() => setLightingPreset('golden')}
+            className={`px-2 py-1 rounded-lg text-xs font-semibold transition ${
+              lightingPreset === 'golden' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            🌅 Golden
+          </button>
+          <button
+            onClick={() => setLightingPreset('night')}
+            className={`px-2 py-1 rounded-lg text-xs font-semibold transition ${
+              lightingPreset === 'night' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            🌙 Night
           </button>
         </div>
       </div>
