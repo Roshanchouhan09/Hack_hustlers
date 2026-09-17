@@ -10,15 +10,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.api.endpoints import router as api_router
+from app.api.health import router as health_router
+from app.middleware import SecurityRateLimiterMiddleware
 from app.database.seed import seed_db
 
 app = FastAPI(
     title="AgriVision API",
     description="Multilingual AI-Powered Precision Agriculture Platform Backend",
-    version="1.0.0",
+    version="1.1.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Security and Rate Limiting Middleware
+app.add_middleware(SecurityRateLimiterMiddleware, max_requests_per_minute=180)
 
 # Enable CORS for Next.js frontend
 app.add_middleware(
@@ -34,6 +39,7 @@ os.makedirs("./static/uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include API routes
+app.include_router(health_router, prefix="/api")
 app.include_router(api_router, prefix="/api")
 
 @app.on_event("startup")
@@ -46,7 +52,7 @@ def root():
         "app": "AgriVision AI Platform API",
         "status": "online",
         "docs": "/docs",
-        "version": "1.0.0"
+        "version": "1.1.0"
     }
 
 if __name__ == "__main__":
