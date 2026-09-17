@@ -1,5 +1,15 @@
 # AgriVision Master Changelog
 
+## [2.7.0] - 2026-09-18
+### Added
+- ICAR 3-season Indo-Gangetic cropping calendar reference.
+- Dynamic Indian agro-climatic cropping season detector (Kharif, Rabi, Zaid).
+- Thermal time model with biological upper heat cutoff threshold and unit tests.
+- Nitrogen Use Efficiency (NUE) and Partial Factor Productivity metrics.
+- RTK GNSS base station survey-in convergence procedures.
+- LiPo high-capacity battery storage voltage and BMS maintenance SOP.
+- Client-side GDD thermal maturity progress bar UI component.
+
 ## [2.6.0] - 2026-09-18
 ### Added
 - LoRaWAN 865-867 MHz Indian frequency band soil node telemetry specifications.
