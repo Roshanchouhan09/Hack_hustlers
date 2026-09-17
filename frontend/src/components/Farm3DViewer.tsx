@@ -182,7 +182,7 @@ export const Farm3DViewer: React.FC<Farm3DViewerProps> = ({
     renderer.setSize(width, heightPx);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
     container.appendChild(renderer.domElement);
@@ -601,12 +601,16 @@ export const Farm3DViewer: React.FC<Farm3DViewerProps> = ({
 
     // 15. Animation Loop
     let animationFrameId: number;
-    const clock = new THREE.Clock();
+    let lastTime = performance.now();
+    let elapsedTime = 0;
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      const delta = clock.getDelta();
+      const currentTime = performance.now();
+      const delta = Math.min((currentTime - lastTime) / 1000, 0.1);
+      lastTime = currentTime;
+      elapsedTime += delta;
       const state = threeStateRef.current;
       if (!state) return;
 
@@ -627,13 +631,13 @@ export const Farm3DViewer: React.FC<Farm3DViewerProps> = ({
       });
 
       // Pulse Disease Beacon
-      const pulse = 1 + Math.sin(clock.getElapsedTime() * 4) * 0.15;
+      const pulse = 1 + Math.sin(elapsedTime * 4) * 0.15;
       beaconRing.scale.set(pulse, pulse, pulse);
       if (holoBeam.material instanceof THREE.Material) {
-        holoBeam.material.opacity = 0.14 + Math.sin(clock.getElapsedTime() * 3) * 0.08;
+        holoBeam.material.opacity = 0.14 + Math.sin(elapsedTime * 3) * 0.08;
       }
       diseaseIcon.rotation.y += delta * 1.5;
-      diseaseIcon.position.y = 8.5 + Math.sin(clock.getElapsedTime() * 2) * 0.3;
+      diseaseIcon.position.y = 8.5 + Math.sin(elapsedTime * 2) * 0.3;
 
       // Drone autonomous flight progression along curve
       if (state.isPlaying) {
@@ -658,8 +662,8 @@ export const Farm3DViewer: React.FC<Farm3DViewerProps> = ({
       // Telemetry update simulation
       setTelemetry((prev) => ({
         ...prev,
-        altitude: +(18 + Math.sin(clock.getElapsedTime() * 0.8) * 0.6).toFixed(1),
-        speed: +(5.2 + Math.cos(clock.getElapsedTime() * 0.5) * 0.4).toFixed(1),
+        altitude: +(18 + Math.sin(elapsedTime * 0.8) * 0.6).toFixed(1),
+        speed: +(5.2 + Math.cos(elapsedTime * 0.5) * 0.4).toFixed(1),
         battery: Math.max(76, +(84 - state.droneFlightT * 3).toFixed(0)),
         scannedPercent: Math.min(100, +(35 + state.droneFlightT * 60).toFixed(0))
       }));
