@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Layers, ShieldCheck, AlertTriangle, Droplets, Info } from 'lucide-react';
+import { Layers, ShieldCheck, AlertTriangle, Droplets, Info, Box, Map as MapIcon, Sparkles } from 'lucide-react';
+import { Farm3DViewer } from './Farm3DViewer';
 
 type LayerKey = 'all' | 'health' | 'disease' | 'water';
 
@@ -20,13 +21,14 @@ interface FarmMapProps {
   centerLat?: number;
   centerLng?: number;
   interactive?: boolean;
+  defaultMode?: '2d' | '3d';
 }
 
 export const FarmMap: React.FC<FarmMapProps> = ({
-  centerLat = 25.6015,
-  centerLng = 85.1240,
-  interactive = true
+  interactive = true,
+  defaultMode = '3d'
 }) => {
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>(defaultMode);
   const [activeLayer, setActiveLayer] = useState<LayerKey>('all');
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -85,172 +87,230 @@ export const FarmMap: React.FC<FarmMapProps> = ({
   ];
 
   return (
-    <div className="relative w-full h-[450px] bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-      {/* Map Control Header Bar */}
-      <div className="bg-slate-900/90 border-b border-slate-800 p-3 px-4 flex flex-wrap items-center justify-between gap-3 z-10">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
-          <Layers className="w-4 h-4 text-emerald-400" />
-          <span>Farm Health Map Layers</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-lg text-xs">
-          <button
-            onClick={() => setActiveLayer('all')}
-            className={`px-2.5 py-1 rounded font-semibold transition ${
-              activeLayer === 'all' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            All Layers
-          </button>
-          <button
-            onClick={() => setActiveLayer('health')}
-            className={`px-2.5 py-1 rounded font-semibold transition ${
-              activeLayer === 'health' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            🟢 Crop Health
-          </button>
-          <button
-            onClick={() => setActiveLayer('disease')}
-            className={`px-2.5 py-1 rounded font-semibold transition ${
-              activeLayer === 'disease' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            🔴 Disease (7.4%)
-          </button>
-          <button
-            onClick={() => setActiveLayer('water')}
-            className={`px-2.5 py-1 rounded font-semibold transition ${
-              activeLayer === 'water' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            🔵 Water Stress (18%)
-          </button>
-        </div>
-      </div>
-
-      <div className="px-4 pt-3 pb-0 text-[11px] text-slate-300">
-        <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-slate-700 bg-slate-950/80 px-2.5 py-1">
-          <span className="text-slate-400">Current Layer:</span>
-          <span className="font-bold text-white">{layerMeta[activeLayer].label}</span>
-          <span className="text-emerald-300 font-semibold">{layerMeta[activeLayer].status}</span>
-          <span className="text-slate-400">•</span>
-          <span className="text-emerald-300 font-semibold">{layerMeta[activeLayer].value}</span>
-        </div>
-      </div>
-
-      {/* SVG Interactive Farm Canvas */}
-      <div className="relative flex-1 bg-slate-950 overflow-hidden flex items-center justify-center group">
-        {/* Background Grid Pattern simulating satellite field imagery */}
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `radial-gradient(#10b981 1px, transparent 1px)`,
-            backgroundSize: '24px 24px'
-          }}
-        />
-
-        {/* Farm Field Polygon Simulation Canvas */}
-        <svg className="w-full h-full p-6" viewBox="0 0 800 500">
-          {/* Main Field Outer Boundary */}
-          <polygon
-            points="100,60 700,60 720,440 80,420"
-            fill="rgba(15, 23, 42, 0.8)"
-            stroke="#059669"
-            strokeWidth="3"
-            strokeDasharray="6 4"
-          />
-
-          {/* Healthy Zone */}
-          {(activeLayer === 'all' || activeLayer === 'health') && (
-            <polygon
-              points="120,80 500,80 480,280 110,270"
-              fill="rgba(16, 185, 129, 0.35)"
-              stroke="#10b981"
-              strokeWidth="2"
-              className="cursor-pointer hover:fill-emerald-500/50 transition-all"
-              onClick={() => setSelectedRegion(regions[0])}
-            />
-          )}
-
-          {/* Disease Zone (Red) */}
-          {(activeLayer === 'all' || activeLayer === 'disease') && (
-            <polygon
-              points="510,80 680,80 670,200 490,190"
-              fill="rgba(239, 68, 68, 0.6)"
-              stroke="#ef4444"
-              strokeWidth="3"
-              className="cursor-pointer hover:fill-red-500/70 transition-all animate-pulse"
-              onClick={() => setSelectedRegion(regions[1])}
-            />
-          )}
-
-          {/* Water Stress Zone (Blue) */}
-          {(activeLayer === 'all' || activeLayer === 'water') && (
-            <polygon
-              points="110,290 690,290 680,410 100,400"
-              fill="rgba(59, 130, 246, 0.45)"
-              stroke="#3b82f6"
-              strokeWidth="2"
-              className="cursor-pointer hover:fill-blue-500/60 transition-all"
-              onClick={() => setSelectedRegion(regions[2])}
-            />
-          )}
-
-          {/* Markers & Pin Labels */}
-          <g transform="translate(580, 140)" className="cursor-pointer" onClick={() => setSelectedRegion(regions[1])}>
-            <circle r="16" fill="#ef4444" opacity="0.4" className="animate-ping" />
-            <circle r="10" fill="#ef4444" />
-            <text x="16" y="4" fill="#ffffff" fontSize="12" fontWeight="bold">Yellow Rust (91%)</text>
-          </g>
-
-          <g transform="translate(300, 340)" className="cursor-pointer" onClick={() => setSelectedRegion(regions[2])}>
-            <circle r="10" fill="#3b82f6" />
-            <text x="16" y="4" fill="#ffffff" fontSize="12" fontWeight="bold">Water Deficit (18%)</text>
-          </g>
-        </svg>
-
-        {/* Legend Panel */}
-        <div className="absolute bottom-4 left-4 bg-slate-900/90 border border-slate-800 p-3 rounded-xl backdrop-blur-md text-xs space-y-1.5 shadow-lg">
-          <div className="font-bold text-slate-200 text-[11px] mb-1 uppercase tracking-wider">Map Legend</div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
-            <span className="text-slate-300">Healthy Crop (78%)</span>
+    <div className="space-y-3">
+      {/* 2D / 3D Mode Selector Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 p-3 px-4 rounded-2xl shadow-lg">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            {viewMode === '3d' ? <Box className="w-4 h-4" /> : <MapIcon className="w-4 h-4" />}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-red-500 inline-block animate-pulse" />
-            <span className="text-slate-300">Disease Detection (7.4%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />
-            <span className="text-slate-300">Water Stress (18%)</span>
-          </div>
-        </div>
-
-        {/* Region Click Modal / Drawer Overlay */}
-        {selectedRegion && (
-          <div className="absolute top-4 right-4 max-w-sm bg-slate-900/95 border border-emerald-700/60 p-4 rounded-xl shadow-2xl backdrop-blur-md text-xs text-slate-200 space-y-2 z-20 animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-                <Info className="w-4 h-4" /> {selectedRegion.name}
-              </span>
-              <button
-                onClick={() => setSelectedRegion(null)}
-                className="text-slate-400 hover:text-white font-bold px-1"
-              >
-                ✕
-              </button>
+          <div>
+            <div className="text-xs font-bold text-white flex items-center gap-2">
+              <span>Farm Spatial Visualizer</span>
+              {viewMode === '3d' && (
+                <span className="flex items-center gap-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  <Sparkles className="w-3 h-3 text-emerald-400 animate-spin" /> 3D Digital Twin Active
+                </span>
+              )}
             </div>
-            <div>
-              <div className="text-slate-400">Affected Area: <strong className="text-white">{selectedRegion.area}</strong></div>
-              <div className="text-slate-400">Current Status: <strong className="text-emerald-300">{selectedRegion.status}</strong></div>
-            </div>
-            <p className="text-slate-300 bg-slate-950/60 p-2 rounded border border-slate-800 leading-relaxed">
-              {selectedRegion.details}
+            <p className="text-[11px] text-slate-400">
+              {viewMode === '3d'
+                ? 'Three.js 3D terrain, autonomous drone flight path simulation, and LiDAR multispectral scan'
+                : '2D blueprint zone boundary polygons and aerial satellite overlay'}
             </p>
           </div>
-        )}
+        </div>
+
+        {/* View Mode Toggle Buttons */}
+        <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button
+            onClick={() => setViewMode('3d')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              viewMode === '3d'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/30'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Box className="w-3.5 h-3.5" />
+            <span>3D Digital Twin</span>
+          </button>
+          <button
+            onClick={() => setViewMode('2d')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              viewMode === '2d'
+                ? 'bg-slate-800 text-white shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <MapIcon className="w-3.5 h-3.5" />
+            <span>2D Map</span>
+          </button>
+        </div>
       </div>
+
+      {/* 3D MODE RENDER */}
+      {viewMode === '3d' ? (
+        <Farm3DViewer height="580px" />
+      ) : (
+        /* 2D MODE RENDER */
+        <div className="relative w-full h-[480px] bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+          {/* Map Control Header Bar */}
+          <div className="bg-slate-900/90 border-b border-slate-800 p-3 px-4 flex flex-wrap items-center justify-between gap-3 z-10">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+              <Layers className="w-4 h-4 text-emerald-400" />
+              <span>Farm Health Map Layers (2D)</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-lg text-xs">
+              <button
+                onClick={() => setActiveLayer('all')}
+                className={`px-2.5 py-1 rounded font-semibold transition ${
+                  activeLayer === 'all' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                All Layers
+              </button>
+              <button
+                onClick={() => setActiveLayer('health')}
+                className={`px-2.5 py-1 rounded font-semibold transition ${
+                  activeLayer === 'health' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🟢 Crop Health
+              </button>
+              <button
+                onClick={() => setActiveLayer('disease')}
+                className={`px-2.5 py-1 rounded font-semibold transition ${
+                  activeLayer === 'disease' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🔴 Disease (7.4%)
+              </button>
+              <button
+                onClick={() => setActiveLayer('water')}
+                className={`px-2.5 py-1 rounded font-semibold transition ${
+                  activeLayer === 'water' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🔵 Water Stress (18%)
+              </button>
+            </div>
+          </div>
+
+          <div className="px-4 pt-3 pb-0 text-[11px] text-slate-300">
+            <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-slate-700 bg-slate-950/80 px-2.5 py-1">
+              <span className="text-slate-400">Current Layer:</span>
+              <span className="font-bold text-white">{layerMeta[activeLayer].label}</span>
+              <span className="text-emerald-300 font-semibold">{layerMeta[activeLayer].status}</span>
+              <span className="text-slate-400">•</span>
+              <span className="text-emerald-300 font-semibold">{layerMeta[activeLayer].value}</span>
+            </div>
+          </div>
+
+          {/* SVG Interactive Farm Canvas */}
+          <div className="relative flex-1 bg-slate-950 overflow-hidden flex items-center justify-center group">
+            {/* Background Grid Pattern */}
+            <div
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage: `radial-gradient(#10b981 1px, transparent 1px)`,
+                backgroundSize: '24px 24px'
+              }}
+            />
+
+            {/* Farm Field Polygon Simulation Canvas */}
+            <svg className="w-full h-full p-6" viewBox="0 0 800 500">
+              {/* Main Field Outer Boundary */}
+              <polygon
+                points="100,60 700,60 720,440 80,420"
+                fill="rgba(15, 23, 42, 0.8)"
+                stroke="#059669"
+                strokeWidth="3"
+                strokeDasharray="6 4"
+              />
+
+              {/* Healthy Zone */}
+              {(activeLayer === 'all' || activeLayer === 'health') && (
+                <polygon
+                  points="120,80 500,80 480,280 110,270"
+                  fill="rgba(16, 185, 129, 0.35)"
+                  stroke="#10b981"
+                  strokeWidth="2"
+                  className="cursor-pointer hover:fill-emerald-500/50 transition-all"
+                  onClick={() => setSelectedRegion(regions[0])}
+                />
+              )}
+
+              {/* Disease Zone (Red) */}
+              {(activeLayer === 'all' || activeLayer === 'disease') && (
+                <polygon
+                  points="510,80 680,80 670,200 490,190"
+                  fill="rgba(239, 68, 68, 0.6)"
+                  stroke="#ef4444"
+                  strokeWidth="3"
+                  className="cursor-pointer hover:fill-red-500/70 transition-all animate-pulse"
+                  onClick={() => setSelectedRegion(regions[1])}
+                />
+              )}
+
+              {/* Water Stress Zone (Blue) */}
+              {(activeLayer === 'all' || activeLayer === 'water') && (
+                <polygon
+                  points="110,290 690,290 680,410 100,400"
+                  fill="rgba(59, 130, 246, 0.45)"
+                  stroke="#3b82f6"
+                  strokeWidth="2"
+                  className="cursor-pointer hover:fill-blue-500/60 transition-all"
+                  onClick={() => setSelectedRegion(regions[2])}
+                />
+              )}
+
+              {/* Markers & Pin Labels */}
+              <g transform="translate(580, 140)" className="cursor-pointer" onClick={() => setSelectedRegion(regions[1])}>
+                <circle r="16" fill="#ef4444" opacity="0.4" className="animate-ping" />
+                <circle r="10" fill="#ef4444" />
+                <text x="16" y="4" fill="#ffffff" fontSize="12" fontWeight="bold">Yellow Rust (91%)</text>
+              </g>
+
+              <g transform="translate(300, 340)" className="cursor-pointer" onClick={() => setSelectedRegion(regions[2])}>
+                <circle r="10" fill="#3b82f6" />
+                <text x="16" y="4" fill="#ffffff" fontSize="12" fontWeight="bold">Water Deficit (18%)</text>
+              </g>
+            </svg>
+
+            {/* Legend Panel */}
+            <div className="absolute bottom-4 left-4 bg-slate-900/90 border border-slate-800 p-3 rounded-xl backdrop-blur-md text-xs space-y-1.5 shadow-lg">
+              <div className="font-bold text-slate-200 text-[11px] mb-1 uppercase tracking-wider">Map Legend</div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+                <span className="text-slate-300">Healthy Crop (78%)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-red-500 inline-block animate-pulse" />
+                <span className="text-slate-300">Disease Detection (7.4%)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />
+                <span className="text-slate-300">Water Stress (18%)</span>
+              </div>
+            </div>
+
+            {/* Region Click Modal */}
+            {selectedRegion && (
+              <div className="absolute top-4 right-4 max-w-sm bg-slate-900/95 border border-emerald-700/60 p-4 rounded-xl shadow-2xl backdrop-blur-md text-xs text-slate-200 space-y-2 z-20 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                    <Info className="w-4 h-4" /> {selectedRegion.name}
+                  </span>
+                  <button
+                    onClick={() => setSelectedRegion(null)}
+                    className="text-slate-400 hover:text-white font-bold px-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div>
+                  <div className="text-slate-400">Affected Area: <strong className="text-white">{selectedRegion.area}</strong></div>
+                  <div className="text-slate-400">Current Status: <strong className="text-emerald-300">{selectedRegion.status}</strong></div>
+                </div>
+                <p className="text-slate-300 bg-slate-950/60 p-2 rounded border border-slate-800 leading-relaxed">
+                  {selectedRegion.details}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
