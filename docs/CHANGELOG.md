@@ -1,5 +1,15 @@
 # AgriVision Master Changelog
 
+## [2.6.0] - 2026-09-18
+### Added
+- LoRaWAN 865-867 MHz Indian frequency band soil node telemetry specifications.
+- Soil electrical conductivity (ECe) to salinity hazard classifier and UI badge.
+- Soil osmotic potential and salinity wheat yield penalty model with unit tests.
+- Horticulture winter chilling hours accumulation service.
+- Direct Seeded Rice (DSR) Tar-Vattar water conservation agronomy guide.
+- Fall Armyworm pheromone trap monitoring and Trichogramma biocontrol protocol.
+- Tubewell pump irrigation run-time duration and power consumption calculator.
+
 ## [2.5.0] - 2026-09-18
 ### Added
 - DGCA 15-Point Pre-Flight Safety Inspection SOP checklist.
