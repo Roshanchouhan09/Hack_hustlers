@@ -1,6 +1,48 @@
 import random
 from typing import Dict, Any, List
 
+class BoundingBoxFormatter:
+    @staticmethod
+    def format_box_to_pixels(box: Dict[str, Any], img_w: int = 1920, img_h: int = 1080) -> Dict[str, Any]:
+        """
+        Converts normalized YOLO coordinates (0.0 - 1.0) into absolute pixel coordinates.
+        """
+        x_min = int(box["x_min"] * img_w)
+        y_min = int(box["y_min"] * img_h)
+        x_max = int(box["x_max"] * img_w)
+        y_max = int(box["y_max"] * img_h)
+
+        return {
+            "label": box["label"],
+            "confidence": box["confidence"],
+            "pixel_coords": {
+                "x": x_min,
+                "y": y_min,
+                "width": x_max - x_min,
+                "height": y_max - y_min
+            },
+            "normalized": {
+                "x_min": box["x_min"],
+                "y_min": box["y_min"],
+                "x_max": box["x_max"],
+                "y_max": box["y_max"]
+            }
+        }
+
+    @staticmethod
+    def classify_severity(affected_area_pct: float) -> Dict[str, Any]:
+        """
+        Classifies disease infestation into clinical agronomy severity grades.
+        """
+        if affected_area_pct < 5.0:
+            return {"grade": "STAGE_1_EARLY_ONSET", "action": "Spot drone fungicide application on infected blocks."}
+        elif affected_area_pct < 15.0:
+            return {"grade": "STAGE_2_MODERATE_SPREAD", "action": "Immediate targeted spray + 10m buffer zone."}
+        elif affected_area_pct < 30.0:
+            return {"grade": "STAGE_3_SEVERE_INFESTATION", "action": "Full-field emergency fungicide treatment within 24h."}
+        else:
+            return {"grade": "STAGE_4_CATASTROPHIC", "action": "Agronomist quarantine; salvage unaffected sectors."}
+
 class DiseaseDetector:
     def __init__(self, model_name: str = "YOLOv8-CropDisease"):
         self.model_name = model_name
@@ -11,7 +53,6 @@ class DiseaseDetector:
         In production, executes PyTorch / YOLO model inference on input image.
         Returns detected disease, confidence score, bounding boxes, and affected area percentage.
         """
-        # Common diseases by crop type
         crop_diseases = {
             "Wheat": [("Yellow Rust (Puccinia striiformis)", 0.92, 7.4), ("Septoria Leaf Blotch", 0.88, 12.1)],
             "Paddy (Rice)": [("Bacterial Leaf Blight", 0.89, 8.5), ("Blast Disease", 0.94, 15.2)],
@@ -22,15 +63,19 @@ class DiseaseDetector:
         
         disease_info = crop_diseases.get(crop_type, crop_diseases["Wheat"])
         selected_disease, confidence, affected_area = random.choice(disease_info)
+        raw_box = {"x_min": 0.25, "y_min": 0.30, "x_max": 0.55, "y_max": 0.65, "label": selected_disease, "confidence": confidence}
+        formatted_box = BoundingBoxFormatter.format_box_to_pixels(raw_box)
+        severity_eval = BoundingBoxFormatter.classify_severity(affected_area)
 
         return {
             "disease_detected": True,
             "disease_name": selected_disease,
             "confidence": confidence,
             "affected_area_pct": affected_area,
-            "bounding_boxes": [
-                {"x_min": 0.25, "y_min": 0.30, "x_max": 0.55, "y_max": 0.65, "label": selected_disease, "confidence": confidence}
-            ]
+            "severity": severity_eval["grade"],
+            "recommended_action": severity_eval["action"],
+            "bounding_boxes": [raw_box],
+            "formatted_boxes": [formatted_box]
         }
 
 class CropStressDetector:
@@ -66,10 +111,6 @@ class RiskAnalyzer:
         pass
 
     def calculate_risk(self, disease_res: Dict[str, Any], health_res: Dict[str, Any], stress_res: Dict[str, Any], weather_risk: float = 10.0) -> Dict[str, Any]:
-        """
-        Aggregates crop health, disease risk, water stress, and weather into an overall farm health score.
-        Score = 100 - (Disease Penalty + Water Stress Penalty + Weather Penalty)
-        """
         disease_penalty = (disease_res.get("affected_area_pct", 0) * 1.5) if disease_res.get("disease_detected") else 0
         stress_penalty = stress_res.get("water_stress_pct", 0) * 0.4
         
@@ -113,8 +154,11 @@ class AIService:
             "disease_name": disease_res["disease_name"],
             "confidence": disease_res["confidence"],
             "affected_area_pct": disease_res["affected_area_pct"],
+            "severity_grade": disease_res.get("severity"),
+            "recommended_action": disease_res.get("recommended_action"),
             "water_stress_pct": stress_res["water_stress_pct"],
             "bounding_boxes": disease_res["bounding_boxes"],
+            "formatted_boxes": disease_res.get("formatted_boxes", []),
             "summary": f"Detected {disease_res['disease_name']} affecting {disease_res['affected_area_pct']}% of the scanned field. Mild water stress (18%). Overall Farm Health Score is {risk_res['health_score']}/100."
         }
 
