@@ -1,27 +1,45 @@
 version: '3.8'
 
+networks:
+  agrivision-net:
+    driver: bridge
+
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: agrivision-backend
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:///./agrivision.db
       - JWT_SECRET=agrivision-super-secret-key-2026
+      - ENVIRONMENT=production
     volumes:
       - ./backend/static:/app/static
-    restart: always
+      - ./backend/agrivision.db:/app/agrivision.db
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/docs\").getcode()' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - agrivision-net
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: agrivision-frontend
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000/api
     depends_on:
-      - backend
-    restart: always
+      backend:
+        condition: service_healthy
+    networks:
+      - agrivision-net
+    restart: unless-stopped
