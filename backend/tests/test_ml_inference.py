@@ -1,4 +1,3 @@
-import pytest
 from app.services.ai_engine import BoundingBoxFormatter, ai_service
 
 def test_bounding_box_pixel_conversion():
@@ -26,3 +25,9 @@ def test_ai_service_scan_image():
     assert result["health_score"] > 0
     assert result["disease_detected"] is True
     assert len(result["bounding_boxes"]) > 0
+
+if __name__ == "__main__":
+    test_bounding_box_pixel_conversion()
+    test_disease_severity_grading()
+    test_ai_service_scan_image()
+    print("All ML inference tests passed!")

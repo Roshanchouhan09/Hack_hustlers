@@ -23,5 +23,9 @@ jobs:
           tags: agrivision-backend:latest
 
       - name: Build Frontend Docker Image
-        run: |
-          docker build -t agrivision-frontend:latest ./frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          tags: agrivision-frontend:latest
