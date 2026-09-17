@@ -28,7 +28,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov ruff
+          pip install pytest pytest-cov ruff httpx email-validator
 
       - name: Lint Code with Ruff (Non-blocking)
         run: |
@@ -36,4 +36,4 @@ jobs:
 
       - name: Run Pytest Suite
         run: |
-          PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
+          PYTHONPATH=. pytest -v
